@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora Escolar: notas, final e faltas</title>
+<style>
+  /* box-sizing: border-box faz padding e borda ficarem DENTRO da largura do elemento */
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    background: #fff7e0;   /* amarelo claro */
+    color: #1b1b1b;        /* quase preto: contraste alto */
+  }
+
+  main { max-width: 640px; margin: 0 auto; }
+
+  h1 { font-size: 1.6rem; margin: 8px 0 4px; color: #0b3d5c; }
+  h2 { font-size: 1.2rem; margin: 0 0 12px; color: #0b3d5c; }
+  .sub { margin: 0 0 20px; }
+
+  /* CARD: padding (espaço dentro), border, border-radius (cantos) e margin (espaço fora) */
+  .card {
+    background: #ffffff;
+    padding: 20px;
+    border: 3px solid #0b3d5c;
+    border-radius: 16px;
+    margin-bottom: 20px;
+  }
+
+  label { display: block; margin: 12px 0 4px; font-weight: bold; }
+
+  input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1rem;
+    border: 2px solid #555;
+    border-radius: 8px;
+  }
+  input:focus, button:focus { outline: 4px solid #f2a900; outline-offset: 2px; }
+
+  .linha { display: flex; gap: 10px; }
+  .linha > div { flex: 1; min-width: 0; }
+
+  /* Botão grande o bastante para tocar no celular (mínimo 48px de altura) */
+  button {
+    width: 100%;
+    min-height: 52px;
+    margin-top: 16px;
+    padding: 12px 16px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #ffffff;
+    background: #0b3d5c;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  button:hover { background: #07293e; }
+
+  .resultado {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 2px solid #999;
+    background: #f1f1f1;
+    display: none;
+  }
+  .resultado.ok   { display: block; background: #dff5e1; border-color: #1e7a34; }
+  .resultado.erro { display: block; background: #fde3e3; border-color: #b3261e; }
+  .resultado.aviso{ display: block; background: #fff0c2; border-color: #a86b00; }
+  .resultado strong { display: block; font-size: 1.15rem; margin-bottom: 6px; }
+  .resultado ol { margin: 8px 0 0; padding-left: 22px; }
+
+  .dica { font-size: 0.9rem; color: #444; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Calculadora Escolar</h1>
+  <p class="sub">Descubra sua média, quanto precisa tirar na final e quantas faltas ainda pode ter.</p>
+
+  <!-- CONFIGURAÇÕES: cada escola tem regras diferentes, então dá para mudar -->
+  <section class="card" aria-labelledby="t-config">
+    <h2 id="t-config">Regras da sua escola</h2>
+    <div class="linha">
+      <div>
+        <label for="meta">Média para passar</label>
+        <input id="meta" type="text" inputmode="decimal" value="6">
+      </div>
+      <div>
+        <label for="metaFinal">Média após a final</label>
+        <input id="metaFinal" type="text" inputmode="decimal" value="5">
+      </div>
+    </div>
+    <label for="presenca">Presença mínima (%)</label>
+    <input id="presenca" type="text" inputmode="decimal" value="75">
+    <p class="dica">Confira esses valores com o regimento da sua escola ou com o professor.</p>
+  </section>
+
+  <!-- FUNÇÃO 1: MÉDIA DOS TRIMESTRES -->
+  <section class="card" aria-labelledby="t-media">
+    <h2 id="t-media">1. Minha média</h2>
+    <div class="linha">
+      <div><label for="t1">1º tri</label><input id="t1" type="text" inputmode="decimal" placeholder="0 a 10"></div>
+      <div><label for="t2">2º tri</label><input id="t2" type="text" inputmode="decimal" placeholder="0 a 10"></div>
+      <div><label for="t3">3º tri</label><input id="t3" type="text" inputmode="decimal" placeholder="vazio = falta"></div>
+    </div>
+    <button type="button" onclick="calcularMedia()">Calcular média</button>
+    <div id="res-media" class="resultado" aria-live="polite"></div>
+  </section>
+
+  <!-- FUNÇÃO 2: NOTA NA PROVA FINAL -->
+  <section class="card" aria-labelledby="t-final">
+    <h2 id="t-final">2. Quanto preciso na final?</h2>
+    <label for="mediaAnual">Minha média anual</label>
+    <input id="mediaAnual" type="text" inputmode="decimal" placeholder="Ex.: 4,5">
+    <button type="button" onclick="calcularFinal()">Calcular nota da final</button>
+    <div id="res-final" class="resultado" aria-live="polite"></div>
+  </section>
+
+  <!-- FUNÇÃO 3: FALTAS -->
+  <section class="card" aria-labelledby="t-faltas">
+    <h2 id="t-faltas">3. Minhas faltas</h2>
+    <div class="linha">
+      <div><label for="aulas">Total de aulas</label><input id="aulas" type="text" inputmode="numeric" placeholder="Ex.: 800"></div>
+      <div><label for="faltas">Minhas faltas</label><input id="faltas" type="text" inputmode="numeric" placeholder="Ex.: 30"></div>
+    </div>
+    <button type="button" onclick="calcularFaltas()">Calcular faltas</button>
+    <div id="res-faltas" class="resultado" aria-live="polite"></div>
+  </section>
+</main>
+
+<script>
+  // Lê um campo e devolve um número. Aceita vírgula (6,5) e ponto (6.5).
+  // Devolve null se o campo estiver vazio e NaN se não for número.
+  function lerNumero(id) {
+    const texto = document.getElementById(id).value.trim().replace(",", ".");
+    if (texto === "") return null;
+    return Number(texto);
+  }
+
+  // Mostra o número com até 2 casas, no formato brasileiro (6,5)
+  function fmt(n) {
+    return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  }
+
+  // Mostra a caixa de resultado. tipo: "ok", "erro" ou "aviso"
+  function mostrar(id, tipo, titulo, passos) {
+    const caixa = document.getElementById(id);
+    let html = "<strong>" + titulo + "</strong>";
+    if (passos && passos.length) {
+      html += "<ol>" + passos.map(p => "<li>" + p + "</li>").join("") + "</ol>";
+    }
+    caixa.className = "resultado " + tipo;
+    caixa.innerHTML = html;
+  }
+
+  // Nota válida = número entre 0 e 10
+  function notaValida(n) {
+    return n !== null && !isNaN(n) && n >= 0 && n <= 10;
+  }
+
+  // ---------- FUNÇÃO 1 ----------
+  function calcularMedia() {
+    const t1 = lerNumero("t1"), t2 = lerNumero("t2"), t3 = lerNumero("t3");
+    const meta = lerNumero("meta");
+
+    if (!notaValida(t1) || !notaValida(t2) || !notaValida(meta)) {
+      mostrar("res-media", "erro", "Confira os campos",
+        ["Preencha o 1º e o 2º trimestre e a média para passar com números de 0 a 10."]);
+      return;
+    }
+
+    // Se o 3º trimestre está vazio, calculamos quanto falta tirar nele
+    if (t3 === null) {
+      const precisa = meta * 3 - t1 - t2;
+      const passos = [
+        "Soma necessária nos 3 trimestres: " + fmt(meta) + " × 3 = " + fmt(meta * 3),
+        "Você já tem: " + fmt(t1) + " + " + fmt(t2) + " = " + fmt(t1 + t2),
+        "Falta: " + fmt(meta * 3) + " − " + fmt(t1 + t2) + " = " + fmt(precisa)
+      ];
+      if (precisa <= 0) {
+        mostrar("res-media", "ok", "Você já passou! Qualquer nota no 3º tri serve.", passos);
+      } else if (precisa > 10) {
+        mostrar("res-media", "erro", "Nem 10 no 3º tri garante a média. Vai precisar da final.", passos);
+      } else {
+        mostrar("res-media", "aviso", "Você precisa de " + fmt(precisa) + " no 3º trimestre.", passos);
+      }
+      return;
+    }
+
+    if (!notaValida(t3)) {
+      mostrar("res-media", "erro", "Nota do 3º tri inválida", ["Use um número de 0 a 10."]);
+      return;
+    }
+
+    const media = (t1 + t2 + t3) / 3;
+    const passos = [
+      "Soma: " + fmt(t1) + " + " + fmt(t2) + " + " + fmt(t3) + " = " + fmt(t1 + t2 + t3),
+      "Divide por 3: " + fmt(t1 + t2 + t3) + " ÷ 3 = " + fmt(media)
+    ];
+    if (media >= meta) {
+      mostrar("res-media", "ok", "Média " + fmt(media) + ": aprovado!", passos);
+    } else {
+      mostrar("res-media", "aviso", "Média " + fmt(media) + ": vai para a prova final.", passos);
+    }
+  }
+
+  // ---------- FUNÇÃO 2 ----------
+  function calcularFinal() {
+    const media = lerNumero("mediaAnual");
+    const meta = lerNumero("meta");
+    const metaFinal = lerNumero("metaFinal");
+
+    if (!notaValida(media) || !notaValida(meta) || !notaValida(metaFinal)) {
+      mostrar("res-final", "erro", "Confira os campos",
+        ["Digite sua média anual e as regras da escola com números de 0 a 10."]);
+      return;
+    }
+
+    if (media >= meta) {
+      mostrar("res-final", "ok", "Você já passou direto. Não precisa de prova final!",
+        ["Sua média " + fmt(media) + " é maior ou igual a " + fmt(meta) + "."]);
+      return;
+    }
+
+    // Regra: (média anual + nota da final) ÷ 2 precisa ser >= metaFinal
+    const precisa = metaFinal * 2 - media;
+    const passos = [
+      "Regra: (média anual + final) ÷ 2 ≥ " + fmt(metaFinal),
+      "Então: média anual + final ≥ " + fmt(metaFinal) + " × 2 = " + fmt(metaFinal * 2),
+      "Final ≥ " + fmt(metaFinal * 2) + " − " + fmt(media) + " = " + fmt(precisa)
+    ];
+    if (precisa > 10) {
+      mostrar("res-final", "erro", "Nem 10 na final seria suficiente com essa regra.", passos);
+    } else {
+      mostrar("res-final", "aviso", "Você precisa tirar " + fmt(precisa) + " na prova final.", passos);
+    }
+  }
+
+  // ---------- FUNÇÃO 3 ----------
+  function calcularFaltas() {
+    const aulas = lerNumero("aulas");
+    const faltas = lerNumero("faltas");
+    const presenca = lerNumero("presenca");
+
+    if (aulas === null || faltas === null || presenca === null ||
+        isNaN(aulas) || isNaN(faltas) || isNaN(presenca) ||
+        aulas <= 0 || faltas < 0 || faltas > aulas || presenca < 0 || presenca > 100) {
+      mostrar("res-faltas", "erro", "Confira os campos",
+        ["O total de aulas deve ser maior que 0 e as faltas não podem passar do total."]);
+      return;
+    }
+
+    const limite = Math.floor(aulas * (100 - presenca) / 100); // máximo de faltas permitido
+    const restam = limite - faltas;
+    const pctFaltas = faltas / aulas * 100;
+    const passos = [
+      "Máximo de faltas: " + fmt(aulas) + " × " + fmt(100 - presenca) + "% = " + limite + " faltas",
+      "Suas faltas: " + fmt(faltas) + " de " + fmt(aulas) + " aulas = " + fmt(pctFaltas) + "%",
+      "Faltas que ainda pode ter: " + limite + " − " + fmt(faltas) + " = " + restam
+    ];
+
+    if (restam < 0) {
+      mostrar("res-faltas", "erro", "Você passou do limite em " + Math.abs(restam) + " falta(s). Fale com a escola.", passos);
+    } else if (restam <= Math.ceil(limite * 0.2)) {
+      mostrar("res-faltas", "aviso", "Cuidado! Só pode faltar mais " + restam + " vez(es).", passos);
+    } else {
+      mostrar("res-faltas", "ok", "Tudo certo: ainda pode faltar " + restam + " vez(es).", passos);
+    }
+  }
+</script>
+</body>
+</html>
